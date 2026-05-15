@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalPFC — Продукты</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">CalPFC</div>
+    <nav>
+      <a href="/" class="nav-item">Дневник</a>
+      <a href="/catalog.html" class="nav-item active">Продукты</a>
+      <a href="/dishes.html" class="nav-item">Блюда</a>
+    </nav>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="page-wrap">
+    <header>
+      <h1>Продукты</h1>
+      <p class="subtitle">Все сохранённые продукты с КБЖУ на 100 г</p>
+    </header>
+
+    <main>
+      <section class="add-food">
+        <h2 id="form-title">Добавить продукт</h2>
+        <form id="catalog-form">
+          <div class="form-row">
+            <label style="flex:2; min-width:200px">
+              Название
+              <input type="text" id="cat-name" placeholder="Гречка, куриное филе…" autocomplete="off" required />
+              <div id="cat-ac-list" style="position:relative"></div>
+              <span id="cat-name-error" class="field-error"></span>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Калории (на 100 г)
+              <input type="number" id="cat-cal" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Белки (г на 100 г)
+              <input type="number" id="cat-p" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Жиры (г на 100 г)
+              <input type="number" id="cat-f" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Углеводы (г на 100 г)
+              <input type="number" id="cat-c" min="0" step="1" placeholder="0" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="catalog-submit-btn">Добавить в справочник</button>
+            <button type="button" class="btn-cancel" id="catalog-cancel-btn" style="display:none">Отмена</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="food-list">
+        <h2>Продукты (<span id="count">0</span>)</h2>
+        <table class="catalog-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th data-col="name">Название</th>
+              <th data-col="calories">Ккал</th>
+              <th data-col="protein">Белки</th>
+              <th data-col="fat">Жиры</th>
+              <th data-col="carbs">Углеводы</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="catalog-tbody">
+            <tr class="empty-row">
+              <td colspan="7">Загрузка…</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast"></div>
+  <script src="catalog.js"></script>
+</body>
+</html>

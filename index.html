@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalPFC — Счётчик КБЖУ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>CalPFC</h1>
+    <p class="subtitle">Счётчик калорий и БЖУ</p>
+  </header>
+
+  <main>
+    <section class="summary">
+      <div class="macro-card" id="card-cal">
+        <span class="macro-label">Калории</span>
+        <span class="macro-value" id="total-cal">0</span>
+        <span class="macro-unit">ккал</span>
+      </div>
+      <div class="macro-card" id="card-p">
+        <span class="macro-label">Белки</span>
+        <span class="macro-value" id="total-p">0</span>
+        <span class="macro-unit">г</span>
+      </div>
+      <div class="macro-card" id="card-f">
+        <span class="macro-label">Жиры</span>
+        <span class="macro-value" id="total-f">0</span>
+        <span class="macro-unit">г</span>
+      </div>
+      <div class="macro-card" id="card-c">
+        <span class="macro-label">Углеводы</span>
+        <span class="macro-value" id="total-c">0</span>
+        <span class="macro-unit">г</span>
+      </div>
+    </section>
+
+    <section class="add-food">
+      <h2>Добавить продукт</h2>
+      <form id="food-form">
+        <div class="form-row">
+          <label>
+            Название
+            <input type="text" id="food-name" placeholder="Гречка, куриное филе…" required />
+          </label>
+          <label>
+            Вес (г)
+            <input type="number" id="food-weight" min="1" value="100" required />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Калории (на 100 г)
+            <input type="number" id="food-cal" min="0" step="0.1" placeholder="0" required />
+          </label>
+          <label>
+            Белки (г на 100 г)
+            <input type="number" id="food-p" min="0" step="0.1" placeholder="0" required />
+          </label>
+          <label>
+            Жиры (г на 100 г)
+            <input type="number" id="food-f" min="0" step="0.1" placeholder="0" required />
+          </label>
+          <label>
+            Углеводы (г на 100 г)
+            <input type="number" id="food-c" min="0" step="0.1" placeholder="0" required />
+          </label>
+        </div>
+        <button type="submit">Добавить</button>
+      </form>
+    </section>
+
+    <section class="food-list">
+      <h2>Дневник питания</h2>
+      <table id="food-table">
+        <thead>
+          <tr>
+            <th>Продукт</th>
+            <th>Вес</th>
+            <th>Ккал</th>
+            <th>Б</th>
+            <th>Ж</th>
+            <th>У</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="food-tbody">
+          <tr class="empty-row">
+            <td colspan="7">Список пуст — добавьте первый продукт</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

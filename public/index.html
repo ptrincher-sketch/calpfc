@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalPFC — Дневник питания</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">CalPFC</div>
+    <nav>
+      <a href="/" class="nav-item active">Дневник</a>
+      <a href="/catalog.html" class="nav-item">Продукты</a>
+      <a href="/dishes.html" class="nav-item">Блюда</a>
+    </nav>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="page-wrap">
+    <header>
+      <h1>Дневник питания</h1>
+      <p class="subtitle">Добавляйте продукты — они сохраняются в справочник</p>
+    </header>
+
+    <main>
+      <!-- Итоги -->
+      <section class="summary">
+        <div class="macro-card" id="card-cal">
+          <span class="macro-label">Калории</span>
+          <span class="macro-value" id="total-cal">0</span>
+          <span class="macro-unit">ккал</span>
+        </div>
+        <div class="macro-card" id="card-p">
+          <span class="macro-label">Белки</span>
+          <span class="macro-value" id="total-p">0</span>
+          <span class="macro-unit">г</span>
+        </div>
+        <div class="macro-card" id="card-f">
+          <span class="macro-label">Жиры</span>
+          <span class="macro-value" id="total-f">0</span>
+          <span class="macro-unit">г</span>
+        </div>
+        <div class="macro-card" id="card-c">
+          <span class="macro-label">Углеводы</span>
+          <span class="macro-value" id="total-c">0</span>
+          <span class="macro-unit">г</span>
+        </div>
+      </section>
+
+      <!-- Форма -->
+      <section class="add-food">
+        <h2>Добавить продукт</h2>
+        <form id="food-form">
+          <div class="form-row">
+            <label style="flex:2; min-width:200px">
+              Название
+              <input type="text" id="food-name" placeholder="Гречка, куриное филе…" autocomplete="off" required />
+              <div id="autocomplete-list" style="position:relative"></div>
+            </label>
+            <label>
+              Вес (г)
+              <input type="number" id="food-weight" min="1" value="100" required />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Калории (на 100 г)
+              <input type="number" id="food-cal" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Белки (г на 100 г)
+              <input type="number" id="food-p" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Жиры (г на 100 г)
+              <input type="number" id="food-f" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Углеводы (г на 100 г)
+              <input type="number" id="food-c" min="0" step="1" placeholder="0" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Добавить в дневник</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Таблица дневника -->
+      <section class="food-list">
+        <h2>Дневник за сегодня</h2>
+        <table id="food-table">
+          <thead>
+            <tr>
+              <th>Продукт</th>
+              <th>Вес</th>
+              <th>Ккал</th>
+              <th>Б</th>
+              <th>Ж</th>
+              <th>У</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="food-tbody">
+            <tr class="empty-row">
+              <td colspan="7">Список пуст — добавьте первый продукт</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
