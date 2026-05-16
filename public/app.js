@@ -1,6 +1,6 @@
 // ---- state ----
-const entries = [];
-let dbFoods = [];  // справочник из БД
+let entries = [];
+let dbFoods = [];
 
 // ---- autocomplete ----
 const nameInput = document.getElementById('food-name');
@@ -11,6 +11,15 @@ async function loadDbFoods() {
     const res = await fetch('/api/foods');
     dbFoods = await res.json();
   } catch { dbFoods = []; }
+}
+
+async function loadDiary() {
+  try {
+    const res = await fetch('/api/diary');
+    entries = await res.json();
+  } catch { entries = []; }
+  renderTable();
+  updateTotals();
 }
 
 function showDropdown(list) {
@@ -88,21 +97,32 @@ form.addEventListener('submit', async e => {
         dbFoods.push(saved);
         toast('Продукт сохранён в справочник');
       }
-    } catch { /* offline — не критично */ }
+    } catch { /* offline */ }
   }
 
   const factor = weight / 100;
-  entries.push({
-    id: Date.now(),
+  const entry = {
     name, weight,
-    cal: round(cal100 * factor),
-    p:   round(p100   * factor),
-    f:   round(f100   * factor),
-    c:   round(c100   * factor),
-  });
+    calories: round(cal100 * factor),
+    protein:  round(p100   * factor),
+    fat:      round(f100   * factor),
+    carbs:    round(c100   * factor),
+  };
 
-  renderTable();
-  updateTotals();
+  try {
+    const res = await fetch('/api/diary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      entries.push(saved);
+      renderTable();
+      updateTotals();
+    }
+  } catch { toast('Ошибка сохранения в дневник'); }
+
   form.reset();
   document.getElementById('food-weight').value = 100;
 });
@@ -116,29 +136,36 @@ function renderTable() {
     <tr>
       <td>${esc(e.name)}</td>
       <td>${e.weight} г</td>
-      <td>${e.cal}</td>
-      <td>${e.p}</td>
-      <td>${e.f}</td>
-      <td>${e.c}</td>
+      <td>${e.calories}</td>
+      <td>${e.protein}</td>
+      <td>${e.fat}</td>
+      <td>${e.carbs}</td>
       <td><button class="del-btn" onclick="remove(${e.id})">✕</button></td>
     </tr>
   `).join('');
 }
 
-function remove(id) {
-  const idx = entries.findIndex(e => e.id === id);
-  if (idx !== -1) entries.splice(idx, 1);
-  renderTable();
-  updateTotals();
+async function remove(id) {
+  try {
+    await fetch(`/api/diary/${id}`, { method: 'DELETE' });
+    entries = entries.filter(e => e.id !== id);
+    renderTable();
+    updateTotals();
+  } catch { toast('Ошибка удаления'); }
 }
 
 function updateTotals() {
-  const s = { cal: 0, p: 0, f: 0, c: 0 };
-  entries.forEach(e => { s.cal += e.cal; s.p += e.p; s.f += e.f; s.c += e.c; });
-  document.getElementById('total-cal').textContent = round(s.cal);
-  document.getElementById('total-p').textContent   = round(s.p);
-  document.getElementById('total-f').textContent   = round(s.f);
-  document.getElementById('total-c').textContent   = round(s.c);
+  const s = { calories: 0, protein: 0, fat: 0, carbs: 0 };
+  entries.forEach(e => {
+    s.calories += parseFloat(e.calories) || 0;
+    s.protein  += parseFloat(e.protein)  || 0;
+    s.fat      += parseFloat(e.fat)      || 0;
+    s.carbs    += parseFloat(e.carbs)    || 0;
+  });
+  document.getElementById('total-cal').textContent = round(s.calories);
+  document.getElementById('total-p').textContent   = round(s.protein);
+  document.getElementById('total-f').textContent   = round(s.fat);
+  document.getElementById('total-c').textContent   = round(s.carbs);
 }
 
 // ---- helpers ----
@@ -157,3 +184,4 @@ function toast(msg) {
 
 // ---- init ----
 loadDbFoods();
+loadDiary();

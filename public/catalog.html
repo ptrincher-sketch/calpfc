@@ -18,11 +18,38 @@
     </nav>
   </aside>
 
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>Вход</span>
+        <button id="login-close" class="modal-close">✕</button>
+      </div>
+      <form id="login-form">
+        <label>
+          Логин
+          <input type="text" id="login-username" autocomplete="username" placeholder="admin" />
+        </label>
+        <label>
+          Пароль
+          <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" />
+        </label>
+        <span id="login-error" class="field-error"></span>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Войти</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- CONTENT -->
   <div class="page-wrap">
     <header>
-      <h1>Продукты</h1>
-      <p class="subtitle">Все сохранённые продукты с КБЖУ на 100 г</p>
+      <div>
+        <h1>Продукты</h1>
+        <p class="subtitle">Все сохранённые продукты с КБЖУ на 100 г</p>
+      </div>
+      <button id="nav-login" class="nav-login-btn" data-state="guest">Вход</button>
     </header>
 
     <main>
@@ -88,5 +115,6 @@
 
   <div id="toast"></div>
   <script src="catalog.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
