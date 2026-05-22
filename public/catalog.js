@@ -52,9 +52,9 @@ function enterEditMode(food, fillName) {
   editId = food.id;
   if (fillName) catNameInput.value = food.name;
   document.getElementById('cat-cal').value = food.calories;
-  document.getElementById('cat-p').value   = food.protein;
-  document.getElementById('cat-f').value   = food.fat;
-  document.getElementById('cat-c').value   = food.carbs;
+  document.getElementById('cat-p').value   = parseFloat(food.protein).toFixed(1);
+  document.getElementById('cat-f').value   = parseFloat(food.fat).toFixed(1);
+  document.getElementById('cat-c').value   = parseFloat(food.carbs).toFixed(1);
   submitBtn.textContent    = 'Изменить';
   submitBtn.disabled       = false;
   cancelBtn.style.display  = '';
@@ -103,9 +103,9 @@ catNameInput.addEventListener('input', () => {
       editSource = 'name';
       editId     = duplicate.id;
       document.getElementById('cat-cal').value = duplicate.calories;
-      document.getElementById('cat-p').value   = duplicate.protein;
-      document.getElementById('cat-f').value   = duplicate.fat;
-      document.getElementById('cat-c').value   = duplicate.carbs;
+      document.getElementById('cat-p').value   = parseFloat(duplicate.protein).toFixed(1);
+      document.getElementById('cat-f').value   = parseFloat(duplicate.fat).toFixed(1);
+      document.getElementById('cat-c').value   = parseFloat(duplicate.carbs).toFixed(1);
       submitBtn.textContent   = 'Изменить';
       submitBtn.disabled      = false;
       cancelBtn.style.display = '';
@@ -141,19 +141,11 @@ catForm.addEventListener('submit', async e => {
 
   try {
     if (editId !== null) {
-      const res = await fetch(`/api/foods/${editId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories, protein, fat, carbs }),
-      });
+      const res = await apiPut(`/api/foods/${editId}`, { name, calories, protein, fat, carbs });
       if (res.ok) { toast('Продукт обновлён'); exitEditMode(true); loadCatalog(); }
       else toast('Ошибка при обновлении');
     } else {
-      const res = await fetch('/api/foods', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories, protein, fat, carbs }),
-      });
+      const res = await apiPost('/api/foods', { name, calories, protein, fat, carbs });
       if (res.ok) { catForm.reset(); toast('Продукт добавлен в справочник'); loadCatalog(); }
       else toast('Ошибка при добавлении');
     }
@@ -183,9 +175,15 @@ function updateSortIndicators() {
 
 // ---- render ----
 function renderTable() {
+  const admin = getCurrentUser()?.username === 'admin';
   const tbody = document.getElementById('catalog-tbody');
+
+  syncCreatorColumn(document.querySelector('.catalog-table thead tr'), admin);
+
+  const cols = admin ? 8 : 7;
+
   if (!allFoods.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Справочник пуст — добавьте продукты</td></tr>';
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Справочник пуст — добавьте продукты</td></tr>`;
     return;
   }
 
@@ -200,9 +198,10 @@ function renderTable() {
       <td><span class="badge">${i + 1}</span></td>
       <td>${esc(f.name)}</td>
       <td>${f.calories}</td>
-      <td>${f.protein}</td>
-      <td>${f.fat}</td>
-      <td>${f.carbs}</td>
+      <td>${parseFloat(f.protein).toFixed(1)}</td>
+      <td>${parseFloat(f.fat).toFixed(1)}</td>
+      <td>${parseFloat(f.carbs).toFixed(1)}</td>
+      ${admin ? `<td class="col-creator">${esc(f.created_by_username || '—')}</td>` : ''}
       <td class="row-actions">
         <button class="edit-btn" title="Редактировать" onclick="editFood(${f.id})">✏</button>
         <button class="del-btn"  title="Удалить"       onclick="deleteFood(${f.id}, this)">✕</button>
@@ -215,7 +214,7 @@ function renderTable() {
 async function loadCatalog() {
   const tbody = document.getElementById('catalog-tbody');
   try {
-    const res = await fetch('/api/foods');
+    const res = await apiGet('/api/foods');
     allFoods  = await res.json();
     document.getElementById('count').textContent = allFoods.length;
     renderTable();
@@ -240,7 +239,7 @@ function editFood(id) {
 async function deleteFood(id, btn) {
   btn.disabled = true;
   try {
-    await fetch(`/api/foods/${id}`, { method: 'DELETE' });
+    await apiDel(`/api/foods/${id}`);
     if (editId === id) exitEditMode(true);
     loadCatalog();
     toast('Продукт удалён');
@@ -249,15 +248,4 @@ async function deleteFood(id, btn) {
   }
 }
 
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-loadCatalog();
+window.addEventListener('calpfc:auth-change', () => loadCatalog());

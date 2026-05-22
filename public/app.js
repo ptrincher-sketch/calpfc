@@ -8,14 +8,22 @@ const acList    = document.getElementById('autocomplete-list');
 
 async function loadDbFoods() {
   try {
-    const res = await fetch('/api/foods');
+    const res = await apiGet('/api/foods');
     dbFoods = await res.json();
   } catch { dbFoods = []; }
 }
 
 async function loadDiary() {
+  const token = getToken();
+  if (!token) {
+    entries = [];
+    renderUnauth();
+    updateTotals();
+    return;
+  }
   try {
-    const res = await fetch('/api/diary');
+    const res = await apiGet('/api/diary');
+    if (res.status === 401) { entries = []; renderUnauth(); updateTotals(); return; }
     entries = await res.json();
   } catch { entries = []; }
   renderTable();
@@ -38,9 +46,9 @@ function showDropdown(list) {
     item.addEventListener('mousedown', () => {
       nameInput.value = f.name;
       document.getElementById('food-cal').value = f.calories;
-      document.getElementById('food-p').value   = f.protein;
-      document.getElementById('food-f').value   = f.fat;
-      document.getElementById('food-c').value   = f.carbs;
+      document.getElementById('food-p').value   = parseFloat(f.protein).toFixed(1);
+      document.getElementById('food-f').value   = parseFloat(f.fat).toFixed(1);
+      document.getElementById('food-c').value   = parseFloat(f.carbs).toFixed(1);
       acList.innerHTML = '';
     });
     box.appendChild(item);
@@ -87,11 +95,7 @@ form.addEventListener('submit', async e => {
   const exists = dbFoods.some(f => f.name.toLowerCase() === name.toLowerCase());
   if (!exists) {
     try {
-      const res = await fetch('/api/foods', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories: cal100, protein: p100, fat: f100, carbs: c100 }),
-      });
+      const res = await apiPost('/api/foods', { name, calories: cal100, protein: p100, fat: f100, carbs: c100 });
       if (res.ok) {
         const saved = await res.json();
         dbFoods.push(saved);
@@ -110,11 +114,8 @@ form.addEventListener('submit', async e => {
   };
 
   try {
-    const res = await fetch('/api/diary', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry),
-    });
+    const res = await apiPost('/api/diary', entry);
+    if (res.status === 401) { toast('Необходимо войти в систему'); return; }
     if (res.ok) {
       const saved = await res.json();
       entries.push(saved);
@@ -127,9 +128,16 @@ form.addEventListener('submit', async e => {
   document.getElementById('food-weight').value = 100;
 });
 
+function renderUnauth() {
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Войдите, чтобы вести дневник</td></tr>';
+}
+
 function renderTable() {
+  const admin = getCurrentUser()?.username === 'admin';
+  syncCreatorColumn(document.querySelector('#food-table thead tr'), admin);
+  const cols = admin ? 8 : 7;
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Список пуст — добавьте первый продукт</td></tr>';
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Список пуст — добавьте первый продукт</td></tr>`;
     return;
   }
   tbody.innerHTML = entries.map(e => `
@@ -137,9 +145,10 @@ function renderTable() {
       <td>${esc(e.name)}</td>
       <td>${e.weight} г</td>
       <td>${e.calories}</td>
-      <td>${e.protein}</td>
-      <td>${e.fat}</td>
-      <td>${e.carbs}</td>
+      <td>${parseFloat(e.protein).toFixed(1)}</td>
+      <td>${parseFloat(e.fat).toFixed(1)}</td>
+      <td>${parseFloat(e.carbs).toFixed(1)}</td>
+      ${admin ? `<td class="col-creator">${esc(e.created_by_username || '—')}</td>` : ''}
       <td><button class="del-btn" onclick="remove(${e.id})">✕</button></td>
     </tr>
   `).join('');
@@ -147,7 +156,7 @@ function renderTable() {
 
 async function remove(id) {
   try {
-    await fetch(`/api/diary/${id}`, { method: 'DELETE' });
+    await apiDel(`/api/diary/${id}`);
     entries = entries.filter(e => e.id !== id);
     renderTable();
     updateTotals();
@@ -163,25 +172,13 @@ function updateTotals() {
     s.carbs    += parseFloat(e.carbs)    || 0;
   });
   document.getElementById('total-cal').textContent = round(s.calories);
-  document.getElementById('total-p').textContent   = round(s.protein);
-  document.getElementById('total-f').textContent   = round(s.fat);
-  document.getElementById('total-c').textContent   = round(s.carbs);
+  document.getElementById('total-p').textContent   = s.protein.toFixed(1);
+  document.getElementById('total-f').textContent   = s.fat.toFixed(1);
+  document.getElementById('total-c').textContent   = s.carbs.toFixed(1);
 }
 
 // ---- helpers ----
 function round(n) { return Math.round(n * 10) / 10; }
 
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
 // ---- init ----
-loadDbFoods();
-loadDiary();
+window.addEventListener('calpfc:auth-change', () => { loadDbFoods(); loadDiary(); });

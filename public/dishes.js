@@ -184,9 +184,9 @@ function recalcKBJU() {
   });
   const r = n => Math.round(n * 10) / 10;
   document.getElementById('cat-cal').value = r(cal) || '';
-  document.getElementById('cat-p').value   = r(p)   || '';
-  document.getElementById('cat-f').value   = r(f)   || '';
-  document.getElementById('cat-c').value   = r(c)   || '';
+  document.getElementById('cat-p').value   = r(p).toFixed(1);
+  document.getElementById('cat-f').value   = r(f).toFixed(1);
+  document.getElementById('cat-c').value   = r(c).toFixed(1);
 }
 
 function clearIngredients() {
@@ -198,7 +198,7 @@ function clearIngredients() {
 async function loadDishIngredients(dishId) {
   ingredients = [];
   try {
-    const res = await fetch(`${API}/${dishId}/ingredients`);
+    const res = await apiGet(`${API}/${dishId}/ingredients`);
     if (res.ok) {
       const data = await res.json();
       ingredients = data.map(item => ({
@@ -224,9 +224,9 @@ async function enterEditMode(food, fillName) {
   editId = food.id;
   if (fillName) catNameInput.value = food.name;
   document.getElementById('cat-cal').value = food.calories;
-  document.getElementById('cat-p').value   = food.protein;
-  document.getElementById('cat-f').value   = food.fat;
-  document.getElementById('cat-c').value   = food.carbs;
+  document.getElementById('cat-p').value   = parseFloat(food.protein).toFixed(1);
+  document.getElementById('cat-f').value   = parseFloat(food.fat).toFixed(1);
+  document.getElementById('cat-c').value   = parseFloat(food.carbs).toFixed(1);
   submitBtn.textContent   = 'Изменить';
   submitBtn.disabled      = false;
   cancelBtn.style.display = '';
@@ -303,19 +303,14 @@ catForm.addEventListener('submit', async e => {
 
   try {
     if (editId !== null) {
-      const res = await fetch(`${API}/${editId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories, protein, fat, carbs, ingredients: ings }),
-      });
+      const res = await apiPut(`${API}/${editId}`, { name, calories, protein, fat, carbs, ingredients: ings });
+      if (res.status === 401) { toast('Необходимо войти в систему'); return; }
+      if (res.status === 403) { toast('Нет прав на редактирование'); return; }
       if (res.ok) { toast('Блюдо обновлено'); exitEditMode(true); loadCatalog(); }
       else toast('Ошибка при обновлении');
     } else {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories, protein, fat, carbs, ingredients: ings }),
-      });
+      const res = await apiPost(API, { name, calories, protein, fat, carbs, ingredients: ings });
+      if (res.status === 401) { toast('Необходимо войти в систему'); return; }
       if (res.ok) { exitEditMode(true); toast('Блюдо добавлено'); loadCatalog(); }
       else toast('Ошибка при добавлении');
     }
@@ -346,10 +341,23 @@ function updateSortIndicators() {
 // ======================================================
 // ТАБЛИЦА БЛЮД
 // ======================================================
+function canEditDish(dish) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (user.username === 'admin') return true;
+  return dish.user_id === user.id;
+}
+
 function renderTable() {
+  const admin = getCurrentUser()?.username === 'admin';
   const tbody = document.getElementById('catalog-tbody');
+
+  syncCreatorColumn(document.querySelector('.catalog-table thead tr'), admin);
+
+  const cols = admin ? 8 : 7;
+
   if (!allFoods.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Список пуст — добавьте первое блюдо</td></tr>';
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Список пуст — добавьте первое блюдо</td></tr>`;
     return;
   }
   const sorted = [...allFoods].sort((a, b) => {
@@ -362,12 +370,15 @@ function renderTable() {
       <td><span class="badge">${i + 1}</span></td>
       <td>${esc(f.name)}</td>
       <td>${f.calories}</td>
-      <td>${f.protein}</td>
-      <td>${f.fat}</td>
-      <td>${f.carbs}</td>
+      <td>${parseFloat(f.protein).toFixed(1)}</td>
+      <td>${parseFloat(f.fat).toFixed(1)}</td>
+      <td>${parseFloat(f.carbs).toFixed(1)}</td>
+      ${admin ? `<td class="col-creator">${esc(f.created_by_username || '—')}</td>` : ''}
       <td class="row-actions">
-        <button class="edit-btn" title="Редактировать" onclick="editFood(${f.id})">✏</button>
-        <button class="del-btn"  title="Удалить"       onclick="deleteFood(${f.id}, this)">✕</button>
+        ${canEditDish(f) ? `
+          <button class="edit-btn" title="Редактировать" onclick="editFood(${f.id})">✏</button>
+          <button class="del-btn"  title="Удалить"       onclick="deleteFood(${f.id}, this)">✕</button>
+        ` : ''}
       </td>
     </tr>
   `).join('');
@@ -376,7 +387,7 @@ function renderTable() {
 async function loadCatalog() {
   const tbody = document.getElementById('catalog-tbody');
   try {
-    const res = await fetch(API);
+    const res = await apiGet(API);
     allFoods  = await res.json();
     document.getElementById('count').textContent = allFoods.length;
     renderTable();
@@ -388,7 +399,7 @@ async function loadCatalog() {
 
 async function loadCatalogFoods() {
   try {
-    const res = await fetch('/api/foods');
+    const res = await apiGet('/api/foods');
     catalogFoods = await res.json();
   } catch { catalogFoods = []; }
 }
@@ -405,27 +416,14 @@ function editFood(id) {
 async function deleteFood(id, btn) {
   btn.disabled = true;
   try {
-    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    const res = await apiDel(`${API}/${id}`);
+    if (res.status === 401) { toast('Необходимо войти в систему'); btn.disabled = false; return; }
+    if (res.status === 403) { toast('Нет прав на удаление'); btn.disabled = false; return; }
     if (editId === id) exitEditMode(true);
     loadCatalog();
     toast('Блюдо удалено');
   } catch { btn.disabled = false; }
 }
 
-// ======================================================
-// УТИЛИТЫ
-// ======================================================
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
 // ---- init ----
-loadCatalog();
-loadCatalogFoods();
+window.addEventListener('calpfc:auth-change', () => { loadCatalog(); loadCatalogFoods(); });

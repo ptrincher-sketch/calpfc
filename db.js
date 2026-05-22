@@ -70,6 +70,16 @@ async function init() {
       [hash]
     );
   }
+
+  await pool.query(`ALTER TABLE diary   ADD COLUMN IF NOT EXISTS user_id    INTEGER REFERENCES users(id)`);
+  await pool.query(`ALTER TABLE dishes  ADD COLUMN IF NOT EXISTS user_id    INTEGER REFERENCES users(id)`);
+  await pool.query(`ALTER TABLE foods   ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id)`);
+
+  // Старые записи дневника отдаём администратору
+  await pool.query(`
+    UPDATE diary SET user_id = (SELECT id FROM users WHERE username = 'admin')
+    WHERE user_id IS NULL
+  `);
 }
 
 module.exports = { pool, init };

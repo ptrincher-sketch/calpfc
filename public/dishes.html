@@ -8,39 +8,7 @@
 </head>
 <body>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">CalPFC</div>
-    <nav>
-      <a href="/" class="nav-item">Дневник</a>
-      <a href="/catalog.html" class="nav-item">Продукты</a>
-      <a href="/dishes.html" class="nav-item active">Блюда</a>
-    </nav>
-  </aside>
-
-  <!-- LOGIN MODAL -->
-  <div id="login-modal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span>Вход</span>
-        <button id="login-close" class="modal-close">✕</button>
-      </div>
-      <form id="login-form">
-        <label>
-          Логин
-          <input type="text" id="login-username" autocomplete="username" placeholder="admin" />
-        </label>
-        <label>
-          Пароль
-          <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" />
-        </label>
-        <span id="login-error" class="field-error"></span>
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Войти</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <aside class="sidebar" id="sidebar-root"></aside>
 
   <!-- CONTENT -->
   <div class="page-wrap">
@@ -71,15 +39,15 @@
             </label>
             <label>
               Белки (г на 100 г)
-              <input type="number" id="cat-p" min="0" step="1" placeholder="0" />
+              <input type="text" inputmode="decimal" id="cat-p" data-macro placeholder="0.0" />
             </label>
             <label>
               Жиры (г на 100 г)
-              <input type="number" id="cat-f" min="0" step="1" placeholder="0" />
+              <input type="text" inputmode="decimal" id="cat-f" data-macro placeholder="0.0" />
             </label>
             <label>
               Углеводы (г на 100 г)
-              <input type="number" id="cat-c" min="0" step="1" placeholder="0" />
+              <input type="text" inputmode="decimal" id="cat-c" data-macro placeholder="0.0" />
             </label>
           </div>
           <!-- Состав блюда -->
@@ -127,7 +95,10 @@
   </div>
 
   <div id="toast"></div>
-  <script src="dishes.js"></script>
+  <script src="utils.js"></script>
+  <script src="macros.js"></script>
+  <script src="api.js"></script>
   <script src="auth.js"></script>
+  <script src="dishes.js"></script>
 </body>
 </html>
