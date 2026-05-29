@@ -86,16 +86,22 @@
 
       <!-- Таблица дневника -->
       <section class="food-list">
-        <h2>Дневник за сегодня</h2>
+        <div class="diary-controls">
+          <h2>Дневник</h2>
+          <input type="date" id="diary-date" />
+          <label class="diary-all-label">
+            <input type="checkbox" id="diary-all-dates" /> все даты
+          </label>
+        </div>
         <table id="food-table">
           <thead>
             <tr>
-              <th>Продукт</th>
-              <th>Вес</th>
-              <th>Ккал</th>
-              <th>Б</th>
-              <th>Ж</th>
-              <th>У</th>
+              <th data-col="name">Продукт</th>
+              <th data-col="weight">Вес</th>
+              <th data-col="calories">Ккал</th>
+              <th data-col="protein">Б</th>
+              <th data-col="fat">Ж</th>
+              <th data-col="carbs">У</th>
               <th></th>
             </tr>
           </thead>

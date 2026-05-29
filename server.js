@@ -109,24 +109,29 @@ app.delete('/api/foods/:id', async (req, res) => {
 app.get('/api/diary', async (req, res) => {
   const user = await getUserFromToken(req);
   if (!user) return res.status(401).json({ error: 'unauthorized' });
+  const all  = req.query.all === '1';
   const date = req.query.date || new Date().toISOString().slice(0, 10);
   try {
     let rows;
     if (user.username === 'admin') {
-      const r = await pool.query(
-        `SELECT d.*, u.username AS created_by_username
-         FROM diary d LEFT JOIN users u ON u.id = d.user_id
-         WHERE d.date = $1 ORDER BY d.created_at`,
-        [date]
-      );
+      const q = all
+        ? `SELECT d.*, u.username AS created_by_username
+           FROM diary d LEFT JOIN users u ON u.id = d.user_id
+           ORDER BY d.date DESC, d.created_at`
+        : `SELECT d.*, u.username AS created_by_username
+           FROM diary d LEFT JOIN users u ON u.id = d.user_id
+           WHERE d.date = $1 ORDER BY d.created_at`;
+      const r = all ? await pool.query(q) : await pool.query(q, [date]);
       rows = r.rows;
     } else {
-      const r = await pool.query(
-        `SELECT d.*, u.username AS created_by_username
-         FROM diary d LEFT JOIN users u ON u.id = d.user_id
-         WHERE d.date = $1 AND d.user_id = $2 ORDER BY d.created_at`,
-        [date, user.id]
-      );
+      const q = all
+        ? `SELECT d.*, u.username AS created_by_username
+           FROM diary d LEFT JOIN users u ON u.id = d.user_id
+           WHERE d.user_id = $1 ORDER BY d.date DESC, d.created_at`
+        : `SELECT d.*, u.username AS created_by_username
+           FROM diary d LEFT JOIN users u ON u.id = d.user_id
+           WHERE d.date = $1 AND d.user_id = $2 ORDER BY d.created_at`;
+      const r = all ? await pool.query(q, [user.id]) : await pool.query(q, [date, user.id]);
       rows = r.rows;
     }
     res.json(rows);

@@ -1,6 +1,19 @@
 // ---- state ----
-let entries = [];
-let dbFoods = [];
+let entries  = [];
+let dbFoods  = [];
+let diarySortCol = 'created_at';
+let diarySortDir = 'asc';
+
+// ---- diary date controls ----
+const diaryDate     = document.getElementById('diary-date');
+const diaryAllDates = document.getElementById('diary-all-dates');
+diaryDate.value = new Date().toISOString().slice(0, 10);
+
+diaryDate.addEventListener('change', loadDiary);
+diaryAllDates.addEventListener('change', () => {
+  diaryDate.disabled = diaryAllDates.checked;
+  loadDiary();
+});
 
 // ---- autocomplete ----
 const nameInput = document.getElementById('food-name');
@@ -21,8 +34,11 @@ async function loadDiary() {
     updateTotals();
     return;
   }
+  const url = diaryAllDates.checked
+    ? '/api/diary?all=1'
+    : `/api/diary?date=${diaryDate.value}`;
   try {
-    const res = await apiGet('/api/diary');
+    const res = await apiGet(url);
     if (res.status === 401) { entries = []; renderUnauth(); updateTotals(); return; }
     entries = await res.json();
   } catch { entries = []; }
@@ -132,16 +148,57 @@ function renderUnauth() {
   tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Войдите, чтобы вести дневник</td></tr>';
 }
 
+function syncDateColumn(theadRow, show) {
+  const existing = theadRow.querySelector('[data-col="date"]');
+  if (show && !existing) {
+    const th = document.createElement('th');
+    th.dataset.col = 'date';
+    th.style.cursor = 'pointer';
+    th.textContent = 'Дата';
+    th.addEventListener('click', () => onDiarySort('date'));
+    theadRow.insertBefore(th, theadRow.firstElementChild);
+  } else if (!show && existing) {
+    existing.remove();
+  }
+}
+
+function onDiarySort(col) {
+  diarySortDir = (diarySortCol === col && diarySortDir === 'asc') ? 'desc' : 'asc';
+  diarySortCol = col;
+  renderTable();
+  updateDiarySortIndicators();
+}
+
+function updateDiarySortIndicators() {
+  document.querySelectorAll('#food-table th[data-col]').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === diarySortCol) th.classList.add(diarySortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+}
+
 function renderTable() {
   const admin = getCurrentUser()?.username === 'admin';
-  syncCreatorColumn(document.querySelector('#food-table thead tr'), admin);
-  const cols = admin ? 8 : 7;
-  if (!entries.length) {
+  const showDate = diaryAllDates.checked && admin;
+  const theadRow = document.querySelector('#food-table thead tr');
+  syncDateColumn(theadRow, showDate);
+  syncCreatorColumn(theadRow, admin);
+
+  const colField = diarySortCol === 'creator' ? 'created_by_username' : diarySortCol;
+  const sorted = [...entries].sort((a, b) => {
+    const av = a[colField] ?? '', bv = b[colField] ?? '';
+    const cmp = typeof av === 'string' ? av.localeCompare(bv, 'ru') : (av - bv);
+    return diarySortDir === 'asc' ? cmp : -cmp;
+  });
+
+  const cols = [7, admin ? 1 : 0, showDate ? 1 : 0].reduce((a, b) => a + b);
+  if (!sorted.length) {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Список пуст — добавьте первый продукт</td></tr>`;
+    updateDiarySortIndicators();
     return;
   }
-  tbody.innerHTML = entries.map(e => `
+  tbody.innerHTML = sorted.map(e => `
     <tr>
+      ${showDate ? `<td class="col-date">${fmtDate(e.date)}</td>` : ''}
       <td>${esc(e.name)}</td>
       <td>${e.weight} г</td>
       <td>${e.calories}</td>
@@ -152,6 +209,7 @@ function renderTable() {
       <td><button class="del-btn" onclick="remove(${e.id})">✕</button></td>
     </tr>
   `).join('');
+  updateDiarySortIndicators();
 }
 
 async function remove(id) {
@@ -179,6 +237,12 @@ function updateTotals() {
 
 // ---- helpers ----
 function round(n) { return Math.round(n * 10) / 10; }
+function fmtDate(d) { if (!d) return '—'; const [y,m,day] = d.slice(0,10).split('-'); return `${day}.${m}.${y}`; }
 
 // ---- init ----
+document.querySelectorAll('#food-table th[data-col]').forEach(th => {
+  th.style.cursor = 'pointer';
+  th.addEventListener('click', () => onDiarySort(th.dataset.col));
+});
+
 window.addEventListener('calpfc:auth-change', () => { loadDbFoods(); loadDiary(); });
